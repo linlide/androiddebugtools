@@ -287,6 +287,28 @@ create_html_viewer() {
             align-items: center;
             z-index: 10;
         }
+        .header-left {
+            display: flex;
+            flex-direction: column;
+        }
+        .header-right {
+            display: flex;
+            align-items: center;
+        }
+        .language-selector {
+            padding: 6px 10px;
+            border-radius: 4px;
+            border: 1px solid #fff;
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+            font-size: 0.9rem;
+            cursor: pointer;
+            outline: none;
+        }
+        .language-selector option {
+            background-color: #fff;
+            color: #333;
+        }
         .header h1 {
             margin: 0;
             font-size: 1.5rem;
@@ -599,29 +621,37 @@ create_html_viewer() {
 </head>
 <body>
     <div class="header">
-        <h1>Android UI 自动查看器 <span class="status-indicator status-success">自动捕获</span></h1>
-        <div class="info">捕获时间: $TIMESTAMP</div>
+        <div class="header-left">
+            <h1>Android UI Automatic Viewer <span class="status-indicator status-success" data-i18n="auto-capture">Auto Capture</span></h1>
+            <div class="info" data-i18n-params="capture-time">Capture Time: $TIMESTAMP</div>
+        </div>
+        <div class="header-right">
+            <select id="languageSelector" class="language-selector">
+                <option value="en">English</option>
+                <option value="zh">中文</option>
+            </select>
+        </div>
     </div>
     
     <div class="main-content">
         <div class="screenshot-panel">
-            <h2>设备截图</h2>
+            <h2 data-i18n="device-screenshot">Device Screenshot</h2>
             <div class="screenshot-container">
-                <img src="screen.png" class="screenshot" id="deviceScreenshot" alt="设备截图" />
+                <img src="screen.png" class="screenshot" id="deviceScreenshot" alt="Device Screenshot" />
             </div>
             <div class="h-resizer" id="horizontalResizer"></div>
         </div>
         
         <div class="right-panel">
             <div class="controls">
-                <button id="expandAll">全部展开</button>
-                <button id="collapseAll">全部折叠</button>
-                <input type="text" id="searchInput" placeholder="搜索文本..." />
-                <button id="searchBtn">搜索</button>
-                <button id="showRawXml">查看原始XML</button>
-                <button id="reloadXml">重新加载XML</button>
-                <button id="recaptureUI">再次获取界面UI</button>
-                <button id="importUI">导入现有UI</button>
+                <button id="expandAll" data-i18n="expand-all">Expand All</button>
+                <button id="collapseAll" data-i18n="collapse-all">Collapse All</button>
+                <input type="text" id="searchInput" data-i18n-placeholder="search-text" placeholder="Search text..." />
+                <button id="searchBtn" data-i18n="search">Search</button>
+                <button id="showRawXml" data-i18n="view-raw-xml">View Raw XML</button>
+                <button id="reloadXml" data-i18n="reload">Reload</button>
+                <button id="recaptureUI" data-i18n="recapture-ui">Recapture UI</button>
+                <button id="importUI" data-i18n="import-ui">Import UI</button>
             </div>
             
             <div class="content-container">
@@ -630,7 +660,7 @@ create_html_viewer() {
                 </div>
                 <div class="v-resizer" id="verticalResizer"></div>
                 <div id="nodeDetail" class="node-detail">
-                    <h3>元素详情</h3>
+                    <h3 data-i18n="element-details">Element Details</h3>
                     <table class="properties-table" id="nodeProperties">
                     </table>
                 </div>
@@ -640,6 +670,160 @@ create_html_viewer() {
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // 语言配置
+            const i18n = {
+                'en': {
+                    'auto-capture': 'Auto Capture',
+                    'capture-time': 'Capture Time: $TIMESTAMP',
+                    'device-screenshot': 'Device Screenshot',
+                    'expand-all': 'Expand All',
+                    'collapse-all': 'Collapse All',
+                    'search-text': 'Search text...',
+                    'search': 'Search',
+                    'view-raw-xml': 'View Raw XML',
+                    'reload': 'Reload',
+                    'recapture-ui': 'Recapture UI',
+                    'import-ui': 'Import UI',
+                    'element-details': 'Element Details',
+                    'no-attributes': 'This node has no attributes',
+                    'raw-xml-content': 'Raw XML Content',
+                    'back-to-tree': 'Back to Tree View',
+                    'xml-parse-error': 'XML Parse Error',
+                    'original-xml-content': 'Original XML Content:',
+                    'try-fix-xml': 'Try to Fix XML',
+                    'import-ui-title': 'Import Existing UI',
+                    'import-ui-desc': 'Please select the type of file to import:',
+                    'import-xml-file': 'Import XML File',
+                    'import-screenshot': 'Import Screenshot',
+                    'cancel': 'Cancel',
+                    'xml-import-success': 'XML structure has been successfully imported!',
+                    'image-import-success': 'Screenshot has been successfully imported!',
+                    'read-file-error': 'Error reading file, please try again.',
+                    'xml-import-error': 'XML Import Error',
+                    'fix-and-import': 'Try to Fix and Import',
+                    'back': 'Back',
+                    'get-new-ui-data': 'Get New UI Data',
+                    'run-command': 'Please run the following command in the terminal to get new UI data:',
+                    'refresh-page': 'Refresh Page',
+                    'close': 'Close',
+                    'no-match-found': 'No match found: ',
+                    'confirm-recapture': 'Are you sure you want to recapture the current UI structure?',
+                    'after-command-instruction': 'After execution, click the "Refresh Page" button below to view the latest results.',
+                    'xml-fetch-error': 'Failed to fetch XML content:',
+                    'xml-parse-error-console': 'Error parsing XML:',
+                    'decode-text-error': 'Error decoding text:',
+                    'parse-node-attr-error': 'Error parsing node attributes:',
+                    'show-node-details-error': 'Error showing node details:',
+                    'screenshot-zero-dim': 'Screenshot dimensions are zero',
+                    'highlight-bounds-error': 'Error highlighting bounds:',
+                    'search-error': 'Error during search:',
+                    'process-xml-error': 'Error processing XML file:'
+                },
+                'zh': {
+                    'auto-capture': '自动捕获',
+                    'capture-time': '捕获时间: $TIMESTAMP',
+                    'device-screenshot': '设备截图',
+                    'expand-all': '全部展开',
+                    'collapse-all': '全部折叠',
+                    'search-text': '搜索文本...',
+                    'search': '搜索',
+                    'view-raw-xml': '查看原始XML',
+                    'reload': '重新加载XML',
+                    'recapture-ui': '再次获取界面UI',
+                    'import-ui': '导入现有UI',
+                    'element-details': '元素详情',
+                    'no-attributes': '该节点没有属性',
+                    'raw-xml-content': '原始XML内容',
+                    'back-to-tree': '返回树视图',
+                    'xml-parse-error': 'XML解析错误',
+                    'original-xml-content': '原始XML内容:',
+                    'try-fix-xml': '尝试修复XML',
+                    'import-ui-title': '导入现有UI',
+                    'import-ui-desc': '请选择要导入的文件类型：',
+                    'import-xml-file': '导入XML文件',
+                    'import-screenshot': '导入截图',
+                    'cancel': '取消',
+                    'xml-import-success': 'XML结构已成功导入！',
+                    'image-import-success': '截图已成功导入！',
+                    'read-file-error': '读取文件时出错，请重试。',
+                    'xml-import-error': 'XML导入错误',
+                    'fix-and-import': '尝试修复并导入',
+                    'back': '返回',
+                    'get-new-ui-data': '获取新的UI数据',
+                    'run-command': '请在终端中执行以下命令来获取新的UI数据：',
+                    'refresh-page': '刷新页面',
+                    'close': '关闭',
+                    'no-match-found': '未找到匹配项: ',
+                    'confirm-recapture': '确定要重新获取当前界面的UI结构吗？',
+                    'after-command-instruction': '执行完成后，点击下方的"刷新页面"按钮查看最新结果。',
+                    'xml-fetch-error': 'XML内容获取失败:',
+                    'xml-parse-error-console': '解析XML时出错:',
+                    'decode-text-error': '解码文本时出错:',
+                    'parse-node-attr-error': '解析节点属性时出错:',
+                    'show-node-details-error': '显示节点详情时出错:',
+                    'screenshot-zero-dim': '截图尺寸为零',
+                    'highlight-bounds-error': '高亮边界时出错:',
+                    'search-error': '搜索时出错:',
+                    'process-xml-error': '处理XML文件时出错:'
+                }
+            };
+            
+            // 当前语言
+            let currentLang = 'en';
+            
+            // 应用语言
+            function applyLanguage(lang) {
+                currentLang = lang;
+                
+                // 保存语言选择到本地存储
+                localStorage.setItem('uiViewerLanguage', lang);
+                
+                // 更新所有带有data-i18n属性的元素
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (i18n[lang][key]) {
+                        el.textContent = i18n[lang][key];
+                    }
+                });
+                
+                // 更新所有带有data-i18n-placeholder属性的元素
+                document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+                    const key = el.getAttribute('data-i18n-placeholder');
+                    if (i18n[lang][key]) {
+                        el.placeholder = i18n[lang][key];
+                    }
+                });
+                
+                // 更新带有data-i18n-params属性的元素
+                document.querySelectorAll('[data-i18n-params]').forEach(el => {
+                    const key = el.getAttribute('data-i18n-params');
+                    if (i18n[lang][key]) {
+                        let text = i18n[lang][key];
+                        // 替换参数
+                        if (key === 'capture-time') {
+                            text = text.replace('$TIMESTAMP', '$TIMESTAMP');
+                        }
+                        el.textContent = text;
+                    }
+                });
+            }
+            
+            // 语言选择器事件
+            const languageSelector = document.getElementById('languageSelector');
+            languageSelector.addEventListener('change', function() {
+                applyLanguage(this.value);
+            });
+            
+            // 从本地存储加载语言设置
+            const savedLang = localStorage.getItem('uiViewerLanguage');
+            if (savedLang && i18n[savedLang]) {
+                currentLang = savedLang;
+                languageSelector.value = savedLang;
+            }
+            
+            // 初始应用语言
+            applyLanguage(currentLang);
+            
             const treeView = document.getElementById('treeView');
             const expandAllBtn = document.getElementById('expandAll');
             const collapseAllBtn = document.getElementById('collapseAll');
@@ -759,7 +943,7 @@ create_html_viewer() {
                 // 创建文本区域显示原始XML
                 const container = document.createElement('div');
                 container.className = 'error-container';
-                container.innerHTML = '<h3>原始XML内容</h3>';
+                container.innerHTML = '<h3>' + i18n[currentLang]['raw-xml-content'] + '</h3>';
                 
                 const textarea = document.createElement('textarea');
                 textarea.className = 'raw-xml';
@@ -768,7 +952,7 @@ create_html_viewer() {
                 
                 const actions = document.createElement('div');
                 actions.className = 'error-actions';
-                actions.innerHTML = '<button id="backToTree">返回树视图</button>';
+                actions.innerHTML = '<button id="backToTree">' + i18n[currentLang]['back-to-tree'] + '</button>';
                 
                 container.appendChild(textarea);
                 container.appendChild(actions);
@@ -854,13 +1038,13 @@ create_html_viewer() {
                     errorContainer.className = 'error-container';
                     
                     const errorTitle = document.createElement('h3');
-                    errorTitle.textContent = 'XML解析错误';
+                    errorTitle.textContent = i18n[currentLang]['xml-parse-error'];
                     
                     const errorMessage = document.createElement('p');
                     errorMessage.textContent = error.message;
                     
                     const rawXmlTitle = document.createElement('h4');
-                    rawXmlTitle.textContent = '原始XML内容:';
+                    rawXmlTitle.textContent = i18n[currentLang]['original-xml-content'];
                     
                     const rawXml = document.createElement('textarea');
                     rawXml.className = 'raw-xml';
@@ -868,7 +1052,7 @@ create_html_viewer() {
                     rawXml.readOnly = true;
                     
                     const fixButton = document.createElement('button');
-                    fixButton.textContent = '尝试修复XML';
+                    fixButton.textContent = i18n[currentLang]['try-fix-xml'];
                     fixButton.style.marginTop = '10px';
                     fixButton.style.marginRight = '10px';
                     fixButton.onclick = function() {
@@ -1093,7 +1277,7 @@ create_html_viewer() {
                     
                     return decodedText;
                 } catch (e) {
-                    console.error('解码文本时出错:', e);
+                    console.error(i18n[currentLang]['decode-text-error'], e);
                     return text; // 如果解码失败，返回原始文本
                 }
             }
@@ -1126,7 +1310,7 @@ create_html_viewer() {
                         const row = document.createElement('tr');
                         const cell = document.createElement('td');
                         cell.colSpan = 2;
-                        cell.textContent = '该节点没有属性';
+                        cell.textContent = i18n[currentLang]['no-attributes'];
                         cell.style.textAlign = 'center';
                         cell.style.fontStyle = 'italic';
                         row.appendChild(cell);
@@ -1184,8 +1368,8 @@ create_html_viewer() {
                         highlightElementBounds(nodeContent);
                     }
                 } catch (e) {
-                    console.error('显示节点详情时出错:', e);
-                    nodeProperties.innerHTML = '<tr><td colspan="2" class="error">显示节点详情时出错: ' + e.message + '</td></tr>';
+                    console.error(i18n[currentLang]['show-node-details-error'], e);
+                    nodeProperties.innerHTML = '<tr><td colspan="2" class="error">' + i18n[currentLang]['show-node-details-error'] + ' ' + e.message + '</td></tr>';
                 }
             }
             
@@ -1219,7 +1403,7 @@ create_html_viewer() {
                     const imgHeight = img.naturalHeight || 1920; // 默认高度，防止为0
                     
                     if (imgWidth === 0 || imgHeight === 0) {
-                        console.error('Screenshot dimensions are zero');
+                        console.error(i18n[currentLang]['screenshot-zero-dim']);
                         return;
                     }
                     
@@ -1242,7 +1426,7 @@ create_html_viewer() {
                     
                     document.body.appendChild(highlightElement);
                 } catch (error) {
-                    console.error('Error highlighting bounds:', error);
+                    console.error(i18n[currentLang]['highlight-bounds-error'], error);
                 }
             }
             
@@ -1423,12 +1607,12 @@ create_html_viewer() {
                             }
                         }
                     } catch (e) {
-                        console.error('搜索时出错:', e);
+                        console.error(i18n[currentLang]['search-error'], e);
                     }
                 });
                 
                 if (!found) {
-                    alert('未找到匹配项: ' + searchText);
+                    alert(i18n[currentLang]['no-match-found'] + searchText);
                 }
             }
             
@@ -1454,7 +1638,7 @@ create_html_viewer() {
             
             // 再次获取界面UI
             recaptureUIBtn.addEventListener('click', function() {
-                if (confirm('确定要重新获取当前界面的UI结构吗？')) {
+                if (confirm(i18n[currentLang]['confirm-recapture'])) {
                     // 获取当前工作目录（基于当前HTML文件的路径）
                     const currentPath = window.location.pathname;
                     const workspacePath = currentPath.substring(0, currentPath.indexOf('/auto_view/'));
@@ -1483,18 +1667,18 @@ create_html_viewer() {
                     
                     // 添加标题
                     const title = document.createElement('h3');
-                    title.textContent = '获取新的UI数据';
+                    title.textContent = i18n[currentLang]['get-new-ui-data'];
                     title.style.marginTop = '0';
                     title.style.color = '#0066cc';
                     
                     // 添加说明
                     const description = document.createElement('p');
-                    description.innerHTML = '请在终端中执行以下命令来获取新的UI数据：<br><br>' +
+                    description.innerHTML = i18n[currentLang]['run-command'] + '<br><br>' +
                         '<div style="background-color: #f5f5f5; padding: 10px; border-radius: 5px; font-family: monospace;">' +
                         'cd ' + workspacePath + '<br>' +
                         './auto_view_ui.sh' +
                         '</div><br>' +
-                        '执行完成后，点击下方的"刷新页面"按钮查看最新结果。';
+                        i18n[currentLang]['after-command-instruction'];
                     
                     // 添加按钮容器
                     const buttonContainer = document.createElement('div');
@@ -1504,7 +1688,7 @@ create_html_viewer() {
                     
                     // 添加关闭按钮
                     const closeButton = document.createElement('button');
-                    closeButton.textContent = '关闭';
+                    closeButton.textContent = i18n[currentLang]['close'];
                     closeButton.style.padding = '8px 15px';
                     closeButton.style.marginRight = '10px';
                     closeButton.style.backgroundColor = '#f0f0f0';
@@ -1517,7 +1701,7 @@ create_html_viewer() {
                     
                     // 添加刷新按钮
                     const refreshButton = document.createElement('button');
-                    refreshButton.textContent = '刷新页面';
+                    refreshButton.textContent = i18n[currentLang]['refresh-page'];
                     refreshButton.style.padding = '8px 15px';
                     refreshButton.style.backgroundColor = '#0066cc';
                     refreshButton.style.color = 'white';
@@ -1567,13 +1751,13 @@ create_html_viewer() {
                 
                 // 添加标题
                 const title = document.createElement('h3');
-                title.textContent = '导入现有UI';
+                title.textContent = i18n[currentLang]['import-ui-title'];
                 title.style.marginTop = '0';
                 title.style.color = '#0066cc';
                 
                 // 添加说明
                 const description = document.createElement('p');
-                description.textContent = '请选择要导入的文件类型：';
+                description.textContent = i18n[currentLang]['import-ui-desc'];
                 
                 // 添加按钮容器
                 const buttonContainer = document.createElement('div');
@@ -1584,7 +1768,7 @@ create_html_viewer() {
                 
                 // 导入XML按钮
                 const importXmlButton = document.createElement('button');
-                importXmlButton.textContent = '导入XML文件';
+                importXmlButton.textContent = i18n[currentLang]['import-xml-file'];
                 importXmlButton.style.padding = '10px 15px';
                 importXmlButton.style.backgroundColor = '#0066cc';
                 importXmlButton.style.color = 'white';
@@ -1598,7 +1782,7 @@ create_html_viewer() {
                 
                 // 导入图片按钮
                 const importImageButton = document.createElement('button');
-                importImageButton.textContent = '导入截图';
+                importImageButton.textContent = i18n[currentLang]['import-screenshot'];
                 importImageButton.style.padding = '10px 15px';
                 importImageButton.style.backgroundColor = '#0066cc';
                 importImageButton.style.color = 'white';
@@ -1612,7 +1796,7 @@ create_html_viewer() {
                 
                 // 取消按钮
                 const cancelButton = document.createElement('button');
-                cancelButton.textContent = '取消';
+                cancelButton.textContent = i18n[currentLang]['cancel'];
                 cancelButton.style.padding = '10px 15px';
                 cancelButton.style.backgroundColor = '#f0f0f0';
                 cancelButton.style.border = 'none';
@@ -1694,10 +1878,10 @@ create_html_viewer() {
                             parseAndRenderXML();
                             
                             // 显示成功消息
-                            alert('XML结构已成功导入！');
+                            alert(i18n[currentLang]['xml-import-success']);
                         } catch (error) {
-                            console.error('处理XML文件时出错:', error);
-                            alert('导入XML失败: ' + error.message);
+                            console.error(i18n[currentLang]['process-xml-error'], error);
+                            alert(i18n[currentLang]['xml-import-error'] + ': ' + error.message);
                             
                             // 显示错误信息和原始内容
                             showImportError(e.target.result, error.message);
@@ -1705,7 +1889,7 @@ create_html_viewer() {
                     };
                     
                     reader.onerror = function() {
-                        alert('读取文件时出错，请重试。');
+                        alert(i18n[currentLang]['read-file-error']);
                     };
                     
                     reader.readAsText(file);
@@ -1751,13 +1935,13 @@ create_html_viewer() {
                 errorContainer.className = 'error-container';
                 
                 const errorTitle = document.createElement('h3');
-                errorTitle.textContent = 'XML导入错误';
+                errorTitle.textContent = i18n[currentLang]['xml-import-error'];
                 
                 const errorMsg = document.createElement('p');
                 errorMsg.textContent = errorMessage;
                 
                 const rawXmlTitle = document.createElement('h4');
-                rawXmlTitle.textContent = '原始XML内容:';
+                rawXmlTitle.textContent = i18n[currentLang]['original-xml-content'];
                 
                 const rawXml = document.createElement('textarea');
                 rawXml.className = 'raw-xml';
@@ -1765,7 +1949,7 @@ create_html_viewer() {
                 rawXml.readOnly = true;
                 
                 const fixButton = document.createElement('button');
-                fixButton.textContent = '尝试修复并导入';
+                fixButton.textContent = i18n[currentLang]['fix-and-import'];
                 fixButton.style.marginTop = '10px';
                 fixButton.style.marginRight = '10px';
                 fixButton.onclick = function() {
@@ -1795,8 +1979,15 @@ create_html_viewer() {
                         // 重新解析和渲染XML
                         parseAndRenderXML();
                     } catch (e) {
-                        alert('修复失败: ' + e.message);
+                        alert(i18n[currentLang]['fix-failed'] + ': ' + e.message);
                     }
+                };
+                
+                const backButton = document.createElement('button');
+                backButton.textContent = i18n[currentLang]['back'];
+                backButton.style.marginTop = '10px';
+                backButton.onclick = function() {
+                    parseAndRenderXML();
                 };
                 
                 errorContainer.appendChild(errorTitle);
@@ -1804,6 +1995,7 @@ create_html_viewer() {
                 errorContainer.appendChild(rawXmlTitle);
                 errorContainer.appendChild(rawXml);
                 errorContainer.appendChild(fixButton);
+                errorContainer.appendChild(backButton);
                 
                 treeView.appendChild(errorContainer);
             }
@@ -1835,7 +2027,7 @@ create_html_viewer() {
                         screenshot.src = e.target.result;
                         
                         // 显示成功消息
-                        alert('截图已成功导入！');
+                        alert(i18n[currentLang]['image-import-success']);
                         
                         // 更新高亮元素位置
                         const selectedNode = document.querySelector('.node-content.selected');
@@ -1847,7 +2039,7 @@ create_html_viewer() {
                     };
                     
                     reader.onerror = function() {
-                        alert('读取文件时出错，请重试。');
+                        alert(i18n[currentLang]['read-file-error']);
                     };
                     
                     reader.readAsDataURL(file);
