@@ -792,6 +792,14 @@ create_html_viewer() {
                     // 预处理XML字符串，修复常见编码问题
                     let processedXmlString = xmlString;
                     
+                    // 检查XML内容是否为空
+                    if (!processedXmlString || !processedXmlString.trim()) {
+                        throw new Error('XML内容为空');
+                    }
+                    
+                    // 移除BOM标记
+                    processedXmlString = processedXmlString.replace(/^\uFEFF/, '');
+                    
                     // 确保XML声明包含UTF-8编码
                     if (!processedXmlString.includes('encoding="UTF-8"') && !processedXmlString.includes("encoding='UTF-8'")) {
                         processedXmlString = processedXmlString.replace(/<\?xml[^>]*\?>/, '<?xml version="1.0" encoding="UTF-8"?>');
@@ -803,14 +811,24 @@ create_html_viewer() {
                     // 处理可能的编码问题
                     processedXmlString = processedXmlString.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ' ');
                     
+                    // 检查是否有根元素
+                    if (!processedXmlString.match(/<[a-zA-Z0-9_:-]+[^>]*>/)) {
+                        throw new Error('无法找到有效的XML标签');
+                    }
+                    
                     // 确保XML字符串是UTF-8编码
                     xmlDoc = parser.parseFromString(processedXmlString, 'text/xml');
                     
                     // 检查是否有解析错误
                     const parseError = xmlDoc.getElementsByTagName('parsererror');
                     if (parseError.length > 0) {
-                        const errorMsg = parseError[0].textContent;
+                        const errorMsg = parseError[0].textContent || '未知解析错误';
                         throw new Error('XML解析错误: ' + errorMsg);
+                    }
+                    
+                    // 检查根元素
+                    if (!xmlDoc.documentElement) {
+                        throw new Error('XML文档没有根元素');
                     }
                     
                     treeView.innerHTML = '';
@@ -849,10 +867,46 @@ create_html_viewer() {
                     rawXml.value = xmlString;
                     rawXml.readOnly = true;
                     
+                    const fixButton = document.createElement('button');
+                    fixButton.textContent = '尝试修复XML';
+                    fixButton.style.marginTop = '10px';
+                    fixButton.style.marginRight = '10px';
+                    fixButton.onclick = function() {
+                        try {
+                            // 尝试更强力的修复
+                            let fixedContent = xmlString;
+                            
+                            // 确保有XML声明
+                            if (!fixedContent.includes('<?xml')) {
+                                fixedContent = '<?xml version="1.0" encoding="UTF-8"?>\n' + fixedContent;
+                            }
+                            
+                            // 如果没有根元素，添加一个
+                            if (!fixedContent.match(/<[a-zA-Z0-9_:-]+[^>]*>/)) {
+                                fixedContent = fixedContent + '\n<hierarchy></hierarchy>';
+                            }
+                            
+                            // 如果有内容但没有被标签包围，添加根标签
+                            if (!fixedContent.match(/<[a-zA-Z0-9_:-]+[^>]*>[\s\S]*<\/[a-zA-Z0-9_:-]+>/)) {
+                                const textContent = fixedContent.replace(/^<\?xml[^>]*>\s*/, '');
+                                fixedContent = '<?xml version="1.0" encoding="UTF-8"?>\n<hierarchy>' + textContent + '</hierarchy>';
+                            }
+                            
+                            // 更新XML内容
+                            xmlString = fixedContent;
+                            
+                            // 重新解析和渲染XML
+                            parseAndRenderXML();
+                        } catch (e) {
+                            alert('修复失败: ' + e.message);
+                        }
+                    };
+                    
                     errorContainer.appendChild(errorTitle);
                     errorContainer.appendChild(errorMessage);
                     errorContainer.appendChild(rawXmlTitle);
                     errorContainer.appendChild(rawXml);
+                    errorContainer.appendChild(fixButton);
                     
                     treeView.appendChild(errorContainer);
                 }
@@ -1489,6 +1543,100 @@ create_html_viewer() {
             
             // 导入现有UI
             importUIBtn.addEventListener('click', function() {
+                // 创建模态对话框
+                const modal = document.createElement('div');
+                modal.style.position = 'fixed';
+                modal.style.top = '0';
+                modal.style.left = '0';
+                modal.style.width = '100%';
+                modal.style.height = '100%';
+                modal.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+                modal.style.zIndex = '9999';
+                modal.style.display = 'flex';
+                modal.style.justifyContent = 'center';
+                modal.style.alignItems = 'center';
+                
+                // 创建对话框内容
+                const modalContent = document.createElement('div');
+                modalContent.style.backgroundColor = 'white';
+                modalContent.style.padding = '20px';
+                modalContent.style.borderRadius = '10px';
+                modalContent.style.maxWidth = '500px';
+                modalContent.style.width = '80%';
+                modalContent.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
+                
+                // 添加标题
+                const title = document.createElement('h3');
+                title.textContent = '导入现有UI';
+                title.style.marginTop = '0';
+                title.style.color = '#0066cc';
+                
+                // 添加说明
+                const description = document.createElement('p');
+                description.textContent = '请选择要导入的文件类型：';
+                
+                // 添加按钮容器
+                const buttonContainer = document.createElement('div');
+                buttonContainer.style.display = 'flex';
+                buttonContainer.style.flexDirection = 'column';
+                buttonContainer.style.gap = '15px';
+                buttonContainer.style.marginTop = '20px';
+                
+                // 导入XML按钮
+                const importXmlButton = document.createElement('button');
+                importXmlButton.textContent = '导入XML文件';
+                importXmlButton.style.padding = '10px 15px';
+                importXmlButton.style.backgroundColor = '#0066cc';
+                importXmlButton.style.color = 'white';
+                importXmlButton.style.border = 'none';
+                importXmlButton.style.borderRadius = '4px';
+                importXmlButton.style.cursor = 'pointer';
+                importXmlButton.onclick = function() {
+                    importXmlFile();
+                    document.body.removeChild(modal);
+                };
+                
+                // 导入图片按钮
+                const importImageButton = document.createElement('button');
+                importImageButton.textContent = '导入截图';
+                importImageButton.style.padding = '10px 15px';
+                importImageButton.style.backgroundColor = '#0066cc';
+                importImageButton.style.color = 'white';
+                importImageButton.style.border = 'none';
+                importImageButton.style.borderRadius = '4px';
+                importImageButton.style.cursor = 'pointer';
+                importImageButton.onclick = function() {
+                    importImageFile();
+                    document.body.removeChild(modal);
+                };
+                
+                // 取消按钮
+                const cancelButton = document.createElement('button');
+                cancelButton.textContent = '取消';
+                cancelButton.style.padding = '10px 15px';
+                cancelButton.style.backgroundColor = '#f0f0f0';
+                cancelButton.style.border = 'none';
+                cancelButton.style.borderRadius = '4px';
+                cancelButton.style.cursor = 'pointer';
+                cancelButton.onclick = function() {
+                    document.body.removeChild(modal);
+                };
+                
+                // 组装对话框
+                buttonContainer.appendChild(importXmlButton);
+                buttonContainer.appendChild(importImageButton);
+                buttonContainer.appendChild(cancelButton);
+                modalContent.appendChild(title);
+                modalContent.appendChild(description);
+                modalContent.appendChild(buttonContainer);
+                modal.appendChild(modalContent);
+                
+                // 显示对话框
+                document.body.appendChild(modal);
+            });
+            
+            // 导入XML文件
+            function importXmlFile() {
                 // 创建文件输入元素
                 const fileInput = document.createElement('input');
                 fileInput.type = 'file';
@@ -1509,14 +1657,51 @@ create_html_viewer() {
                     
                     const reader = new FileReader();
                     reader.onload = function(e) {
-                        // 更新XML内容
-                        xmlString = e.target.result;
-                        
-                        // 重新解析和渲染XML
-                        parseAndRenderXML();
-                        
-                        // 显示成功消息
-                        alert('UI结构已成功导入！');
+                        try {
+                            // 获取文件内容
+                            let xmlContent = e.target.result;
+                            
+                            // 预处理XML内容
+                            xmlContent = preprocessXmlContent(xmlContent);
+                            
+                            // 验证XML内容
+                            if (!xmlContent || !xmlContent.trim()) {
+                                throw new Error('XML文件为空');
+                            }
+                            
+                            // 检查是否包含XML声明
+                            if (!xmlContent.includes('<?xml')) {
+                                xmlContent = '<?xml version="1.0" encoding="UTF-8"?>\n' + xmlContent;
+                            }
+                            
+                            // 检查是否包含根元素
+                            if (!xmlContent.includes('<hierarchy')) {
+                                // 如果没有hierarchy标签，尝试查找任何XML标签
+                                const tagMatch = xmlContent.match(/<([a-zA-Z0-9_:-]+)[^>]*>/);
+                                if (!tagMatch) {
+                                    throw new Error('无法找到有效的XML标签');
+                                }
+                                
+                                // 使用找到的第一个标签作为根元素
+                                const rootTag = tagMatch[1];
+                                console.log('使用 ' + rootTag + ' 作为根元素');
+                            }
+                            
+                            // 更新XML内容
+                            xmlString = xmlContent;
+                            
+                            // 重新解析和渲染XML
+                            parseAndRenderXML();
+                            
+                            // 显示成功消息
+                            alert('XML结构已成功导入！');
+                        } catch (error) {
+                            console.error('处理XML文件时出错:', error);
+                            alert('导入XML失败: ' + error.message);
+                            
+                            // 显示错误信息和原始内容
+                            showImportError(e.target.result, error.message);
+                        }
                     };
                     
                     reader.onerror = function() {
@@ -1526,7 +1711,149 @@ create_html_viewer() {
                     reader.readAsText(file);
                     document.body.removeChild(fileInput);
                 });
-            });
+            }
+            
+            // 预处理XML内容
+            function preprocessXmlContent(content) {
+                if (!content) return content;
+                
+                // 移除BOM标记
+                content = content.replace(/^\uFEFF/, '');
+                
+                // 移除前导空白
+                content = content.trim();
+                
+                // 移除XML注释
+                content = content.replace(/<!--[\s\S]*?-->/g, '');
+                
+                // 移除非打印字符
+                content = content.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ' ');
+                
+                // 确保XML声明包含UTF-8编码
+                if (content.includes('<?xml')) {
+                    if (!content.includes('encoding="UTF-8"') && !content.includes("encoding='UTF-8'")) {
+                        content = content.replace(/<\?xml[^>]*\?>/, '<?xml version="1.0" encoding="UTF-8"?>');
+                    }
+                } else {
+                    content = '<?xml version="1.0" encoding="UTF-8"?>\n' + content;
+                }
+                
+                return content;
+            }
+            
+            // 显示导入错误
+            function showImportError(content, errorMessage) {
+                // 清空树视图
+                treeView.innerHTML = '';
+                
+                // 创建错误消息
+                const errorContainer = document.createElement('div');
+                errorContainer.className = 'error-container';
+                
+                const errorTitle = document.createElement('h3');
+                errorTitle.textContent = 'XML导入错误';
+                
+                const errorMsg = document.createElement('p');
+                errorMsg.textContent = errorMessage;
+                
+                const rawXmlTitle = document.createElement('h4');
+                rawXmlTitle.textContent = '原始XML内容:';
+                
+                const rawXml = document.createElement('textarea');
+                rawXml.className = 'raw-xml';
+                rawXml.value = content;
+                rawXml.readOnly = true;
+                
+                const fixButton = document.createElement('button');
+                fixButton.textContent = '尝试修复并导入';
+                fixButton.style.marginTop = '10px';
+                fixButton.style.marginRight = '10px';
+                fixButton.onclick = function() {
+                    try {
+                        // 尝试更强力的修复
+                        let fixedContent = content;
+                        
+                        // 确保有XML声明
+                        if (!fixedContent.includes('<?xml')) {
+                            fixedContent = '<?xml version="1.0" encoding="UTF-8"?>\n' + fixedContent;
+                        }
+                        
+                        // 如果没有根元素，添加一个
+                        if (!fixedContent.match(/<[a-zA-Z0-9_:-]+[^>]*>/)) {
+                            fixedContent = fixedContent + '\n<hierarchy></hierarchy>';
+                        }
+                        
+                        // 如果有内容但没有被标签包围，添加根标签
+                        if (!fixedContent.match(/<[a-zA-Z0-9_:-]+[^>]*>[\s\S]*<\/[a-zA-Z0-9_:-]+>/)) {
+                            const textContent = fixedContent.replace(/^<\?xml[^>]*>\s*/, '');
+                            fixedContent = '<?xml version="1.0" encoding="UTF-8"?>\n<hierarchy>' + textContent + '</hierarchy>';
+                        }
+                        
+                        // 更新XML内容
+                        xmlString = fixedContent;
+                        
+                        // 重新解析和渲染XML
+                        parseAndRenderXML();
+                    } catch (e) {
+                        alert('修复失败: ' + e.message);
+                    }
+                };
+                
+                errorContainer.appendChild(errorTitle);
+                errorContainer.appendChild(errorMsg);
+                errorContainer.appendChild(rawXmlTitle);
+                errorContainer.appendChild(rawXml);
+                errorContainer.appendChild(fixButton);
+                
+                treeView.appendChild(errorContainer);
+            }
+            
+            // 导入图片文件
+            function importImageFile() {
+                // 创建文件输入元素
+                const fileInput = document.createElement('input');
+                fileInput.type = 'file';
+                fileInput.accept = 'image/*';
+                fileInput.style.display = 'none';
+                document.body.appendChild(fileInput);
+                
+                // 触发文件选择对话框
+                fileInput.click();
+                
+                // 处理文件选择
+                fileInput.addEventListener('change', function() {
+                    const file = this.files[0];
+                    if (!file) {
+                        document.body.removeChild(fileInput);
+                        return;
+                    }
+                    
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        // 更新截图
+                        const screenshot = document.getElementById('deviceScreenshot');
+                        screenshot.src = e.target.result;
+                        
+                        // 显示成功消息
+                        alert('截图已成功导入！');
+                        
+                        // 更新高亮元素位置
+                        const selectedNode = document.querySelector('.node-content.selected');
+                        if (selectedNode) {
+                            setTimeout(() => {
+                                highlightElementBounds(selectedNode);
+                            }, 100);
+                        }
+                    };
+                    
+                    reader.onerror = function() {
+                        alert('读取文件时出错，请重试。');
+                    };
+                    
+                    reader.readAsDataURL(file);
+                    document.body.removeChild(fileInput);
+                });
+            }
         });
     </script>
 </body>
