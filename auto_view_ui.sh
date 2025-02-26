@@ -1401,11 +1401,89 @@ create_html_viewer() {
             // 再次获取界面UI
             recaptureUIBtn.addEventListener('click', function() {
                 if (confirm('确定要重新获取当前界面的UI结构吗？')) {
-                    // 创建一个新的时间戳，确保不会与当前会话冲突
-                    const newTimestamp = new Date().toISOString().replace(/[:.]/g, '').substring(0, 15);
+                    // 获取当前工作目录（基于当前HTML文件的路径）
+                    const currentPath = window.location.pathname;
+                    const workspacePath = currentPath.substring(0, currentPath.indexOf('/auto_view/'));
                     
-                    // 显示提示信息
-                    alert('请在终端中执行以下命令来重新获取UI：\n\n./auto_view_ui.sh\n\n这将创建一个新的UI分析会话。');
+                    // 创建一个模态对话框
+                    const modal = document.createElement('div');
+                    modal.style.position = 'fixed';
+                    modal.style.top = '0';
+                    modal.style.left = '0';
+                    modal.style.width = '100%';
+                    modal.style.height = '100%';
+                    modal.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+                    modal.style.zIndex = '9999';
+                    modal.style.display = 'flex';
+                    modal.style.justifyContent = 'center';
+                    modal.style.alignItems = 'center';
+                    
+                    // 创建对话框内容
+                    const modalContent = document.createElement('div');
+                    modalContent.style.backgroundColor = 'white';
+                    modalContent.style.padding = '20px';
+                    modalContent.style.borderRadius = '10px';
+                    modalContent.style.maxWidth = '500px';
+                    modalContent.style.width = '80%';
+                    modalContent.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
+                    
+                    // 添加标题
+                    const title = document.createElement('h3');
+                    title.textContent = '获取新的UI数据';
+                    title.style.marginTop = '0';
+                    title.style.color = '#0066cc';
+                    
+                    // 添加说明
+                    const description = document.createElement('p');
+                    description.innerHTML = '请在终端中执行以下命令来获取新的UI数据：<br><br>' +
+                        '<div style="background-color: #f5f5f5; padding: 10px; border-radius: 5px; font-family: monospace;">' +
+                        'cd ' + workspacePath + '<br>' +
+                        './auto_view_ui.sh' +
+                        '</div><br>' +
+                        '执行完成后，点击下方的"刷新页面"按钮查看最新结果。';
+                    
+                    // 添加按钮容器
+                    const buttonContainer = document.createElement('div');
+                    buttonContainer.style.display = 'flex';
+                    buttonContainer.style.justifyContent = 'flex-end';
+                    buttonContainer.style.marginTop = '20px';
+                    
+                    // 添加关闭按钮
+                    const closeButton = document.createElement('button');
+                    closeButton.textContent = '关闭';
+                    closeButton.style.padding = '8px 15px';
+                    closeButton.style.marginRight = '10px';
+                    closeButton.style.backgroundColor = '#f0f0f0';
+                    closeButton.style.border = 'none';
+                    closeButton.style.borderRadius = '4px';
+                    closeButton.style.cursor = 'pointer';
+                    closeButton.onclick = function() {
+                        document.body.removeChild(modal);
+                    };
+                    
+                    // 添加刷新按钮
+                    const refreshButton = document.createElement('button');
+                    refreshButton.textContent = '刷新页面';
+                    refreshButton.style.padding = '8px 15px';
+                    refreshButton.style.backgroundColor = '#0066cc';
+                    refreshButton.style.color = 'white';
+                    refreshButton.style.border = 'none';
+                    refreshButton.style.borderRadius = '4px';
+                    refreshButton.style.cursor = 'pointer';
+                    refreshButton.onclick = function() {
+                        window.location.reload();
+                    };
+                    
+                    // 组装对话框
+                    buttonContainer.appendChild(closeButton);
+                    buttonContainer.appendChild(refreshButton);
+                    modalContent.appendChild(title);
+                    modalContent.appendChild(description);
+                    modalContent.appendChild(buttonContainer);
+                    modal.appendChild(modalContent);
+                    
+                    // 显示对话框
+                    document.body.appendChild(modal);
                 }
             });
             
